@@ -1,0 +1,8 @@
+This project is for the software of Northackton's first project, a
+pysical music sequencer.  This is comprised of several parts:
+
+* Reading user input via a webcam
+* Generating audio output
+
+Currently the first part is being developed, using the OpenCV library.
+This code is not suitable for release!
