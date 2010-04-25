@@ -26,11 +26,11 @@ int main(int argc, char** argv)
         cvtColor(img, gray, CV_BGR2GRAY);
         cout << "Greyscaled" << endl;
         // smooth it, otherwise a lot of false circles may be detected
-        //GaussianBlur( gray, gray, Size(9, 9), 2, 2 );
+        GaussianBlur( gray, gray, Size(9, 9), 2, 2 );
         cout << "Blurred" << endl;
         vector<Vec3f> circles;
         HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 2, 40, 200, 100, 20, 28);
-        cout << "Found " << circles.size() << "circles" << endl;
+        cout << "Found " << circles.size() << " circles" << endl;
         for( size_t i = 0; i < circles.size(); i++ )
         {
             Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));

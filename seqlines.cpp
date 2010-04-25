@@ -43,10 +43,8 @@ int main(int argc, char** argv)
           line( color_dst, pt1, pt2, Scalar(0,0,255), 3, 8 );
         }
 
-        namedWindow( "circles", CV_WINDOW_AUTOSIZE );
-        //moveWindow("circles", 100, 100);
-        //resizeWindow("circles", 640, 480);
-        imshow( "circles", color_dst );
+        namedWindow( "lines", CV_WINDOW_AUTOSIZE );
+        imshow( "lines", color_dst );
         waitKey(0);
         //imwrite(argv[2], img);
     }
