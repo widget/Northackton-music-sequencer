@@ -1,5 +1,6 @@
 
 #include <unistd.h>
+#include <stdint.h>
 
 #include <iostream>
 #include <string>
@@ -14,21 +15,28 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-    //VideoCapture mycap;
-    //if( argc != 2 && !mycap.open(argv[1]))
-    //  return -1;
-
     int video = -1;
     int c;
     string filename;
+
+    Point poi[16][4];
+
+    for (unsigned int i = 0; i < 16; ++i)
+    {
+        for (unsigned int j = 0; j < 4; ++j)
+        {
+            poi[i][j].x = 50 + (i*36);
+            poi[i][j].y = 200 + (j*36);
+        }
+    }
     
-    while ((c = getopt(argc, argv, "v:i:")) != -1)
+    while ((c = getopt(argc, argv, "vi:")) != -1)
     {
         switch (c)
         {
             case 'v':
-                video = atoi(optarg);
-                cout << "Using video device " << video << endl;
+                video = 1;//atoi(optarg);
+                cout << "Using video " << endl;
                 break;
 
             case 'i':
@@ -60,13 +68,15 @@ int main(int argc, char** argv)
     int delay;
     try
     {
-        CvCapture *viddevice = 0;
+        VideoCapture viddevice(filename);
+        //CvCapture *viddevice;
         if (video > -1)
         {
-            viddevice = cvCreateFileCapture(video);
-            delay = (int) 1000/ cvGetCaptureProperty(viddevice,CV_CAP_PROP_FPS);
+            //viddevice = cvCreateFileCapture(filename.c_str());
+            //delay = (int) 1000/ cvGetCaptureProperty(viddevice,CV_CAP_PROP_FPS);
+            delay = (int) 1000/ viddevice.get(CV_CAP_PROP_FPS);
             
-            cout << "Loaded video, framerate" << delay << endl;
+            cout << "Loaded video, framerate " << delay << endl;
         }
         namedWindow( "circles", CV_WINDOW_AUTOSIZE );
 
@@ -81,7 +91,8 @@ int main(int argc, char** argv)
             }
             else
             {
-                img = cvQueryFrame(viddevice);
+                viddevice >> img;
+                //img = cvQueryFrame(viddevice);
             }
             cvtColor(img, gray, CV_BGR2GRAY);
             //cout << "Greyscaled" << endl;
@@ -105,6 +116,37 @@ int main(int argc, char** argv)
                 circle( img, center, 3, Scalar(0,255,0), -1, 8, 0 );
                 // draw the circle outline
                 circle( img, center, radius, Scalar(0,0,255), 3, 8, 0 );
+            }
+
+            Scalar off(255,0,0);
+            Scalar on(0,0,255);
+            const unsigned int MIN_DIST = 15;
+            
+            for (unsigned int i = 0; i < 16; ++i)
+            {
+                for (unsigned int j = 0; j < 4; ++j)
+                {
+                    bool match = false;
+                    for (vector<Vec3f>::const_iterator iter = circles.begin();
+                         (iter != circles.end()) && !match;
+                         ++iter)
+                    {
+                        float dist = poi[i][j].x - (*iter)[0];
+                        dist *= dist;
+                        dist += pow(poi[i][j].y - (*iter)[1], 2);
+                        dist = sqrt(dist);
+
+                        if (dist < MIN_DIST)
+                        {
+                            match = true;
+                        }
+                    }
+
+                    if (match)
+                        circle( img, poi[i][j], 3, on, -1, 8, 0 );
+                    else
+                        circle( img, poi[i][j], 3, off, -1, 8, 0 );
+                }
             }
             //moveWindow("circles", 100, 100);
             //resizeWindow("circles", 640, 480);
