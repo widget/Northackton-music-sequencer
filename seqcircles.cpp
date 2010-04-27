@@ -60,11 +60,18 @@ int main(int argc, char** argv)
     int delay;
     try
     {
-        CvCapture *viddevice = 0;
+	VideoCapture viddevice(0);
+	if(!viddevice.isOpened())  // check if we succeeded
+	{
+	  cout << "Couldn't open device" << endl;
+	  return 1;
+	}
+        //CvCapture *viddevice = 0;
         if (video > -1)
         {
-            viddevice = cvCreateFileCapture(video);
-            delay = (int) 1000/ cvGetCaptureProperty(viddevice,CV_CAP_PROP_FPS);
+            //viddevice = cvCreateFileCapture(video);
+            //delay = (int) 1000/ cvGetCaptureProperty(viddevice,CV_CAP_PROP_FPS);
+	    delay = 40;//(int) 1000/ viddevice.get(CV_CAP_PROP_FPS);
             
             cout << "Loaded video, framerate" << delay << endl;
         }
@@ -81,7 +88,8 @@ int main(int argc, char** argv)
             }
             else
             {
-                img = cvQueryFrame(viddevice);
+                //img = cvQueryFrame(viddevice);
+		viddevice >> img;
             }
             cvtColor(img, gray, CV_BGR2GRAY);
             //cout << "Greyscaled" << endl;
@@ -89,7 +97,7 @@ int main(int argc, char** argv)
             GaussianBlur( gray, gray, Size(9, 9), 2, 2 );
             //cout << "Blurred" << endl;
             vector<Vec3f> circles;
-            HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 2, 40, 200, 35, 20, 28);
+            HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 2, 40, 200, 35, 10, 28);
             //cout << "Found " << circles.size() << " circles" << endl;
             IplImage ipimg = img;
             for( size_t i = 0; i < circles.size(); i++ )
@@ -122,7 +130,7 @@ int main(int argc, char** argv)
     }
     catch (const cv::Exception &e)
     {
-        cerr << "Caught exception: " << e.what() << endl;
+        cerr << "Caught exception: " << endl;
     }
     return 0;
 }

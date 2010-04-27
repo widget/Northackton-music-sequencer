@@ -50,7 +50,7 @@ int main(int argc, char** argv)
     }
     catch (const cv::Exception &e)
     {
-        cerr << "Caught exception: " << e.what() << endl;
+        cerr << "Caught exception: " << endl;
     }
     return 0;
 }
