@@ -1,7 +1,10 @@
 
 #include <unistd.h>
+#include <stdint.h>
 
 #include <iostream>
+#include <fstream>
+#include <cstdio>
 #include <string>
 
 #include <cv.h>
@@ -14,21 +17,29 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-    //VideoCapture mycap;
-    //if( argc != 2 && !mycap.open(argv[1]))
-    //  return -1;
-
     int video = -1;
     int c;
     string filename;
+
+    Point poi[16][4];
+    uint8_t outmsg[16];
+
+    for (unsigned int i = 0; i < 16; ++i)
+    {
+        for (unsigned int j = 0; j < 4; ++j)
+        {
+            poi[i][j].x = 50 + (i*36);
+            poi[i][j].y = 200 + (j*36);
+        }
+    }
     
-    while ((c = getopt(argc, argv, "v:i:")) != -1)
+    while ((c = getopt(argc, argv, "vi:")) != -1)
     {
         switch (c)
         {
             case 'v':
-                video = atoi(optarg);
-                cout << "Using video device " << video << endl;
+                video = 1;//atoi(optarg);
+                cout << "Using video " << endl;
                 break;
 
             case 'i':
@@ -56,6 +67,7 @@ int main(int argc, char** argv)
         return 0;
     }
     
+    ofstream serport("/dev/ttyUSB0");
     Mat img, gray;
     int delay;
     try
@@ -71,9 +83,9 @@ int main(int argc, char** argv)
         {
             //viddevice = cvCreateFileCapture(video);
             //delay = (int) 1000/ cvGetCaptureProperty(viddevice,CV_CAP_PROP_FPS);
-	    delay = 40;//(int) 1000/ viddevice.get(CV_CAP_PROP_FPS);
+	    delay = 100;//(int) 1000/ viddevice.get(CV_CAP_PROP_FPS);
             
-            cout << "Loaded video, framerate" << delay << endl;
+            cout << "Loaded video, framerate " << delay << endl;
         }
         namedWindow( "circles", CV_WINDOW_AUTOSIZE );
 
@@ -94,10 +106,10 @@ int main(int argc, char** argv)
             cvtColor(img, gray, CV_BGR2GRAY);
             //cout << "Greyscaled" << endl;
             // smooth it, otherwise a lot of false circles may be detected
-            GaussianBlur( gray, gray, Size(9, 9), 2, 2 );
+            //GaussianBlur( gray, gray, Size(5, 5), 2, 2 );
             //cout << "Blurred" << endl;
             vector<Vec3f> circles;
-            HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 2, 40, 200, 35, 10, 28);
+            HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 2, 40, 200, 35, 5, 28);
             //cout << "Found " << circles.size() << " circles" << endl;
             IplImage ipimg = img;
             for( size_t i = 0; i < circles.size(); i++ )
@@ -114,6 +126,47 @@ int main(int argc, char** argv)
                 // draw the circle outline
                 circle( img, center, radius, Scalar(0,0,255), 3, 8, 0 );
             }
+
+            Scalar off(255,0,0);
+            Scalar on(0,0,255);
+            //const unsigned int MIN_DIST = 20;
+            
+	    memset(outmsg, 0, 16);
+	    
+            for (unsigned int i = 0; i < 16; ++i)
+            {
+                for (unsigned int j = 0; j < 4; ++j)
+                {
+                    bool match = false;
+                    for (vector<Vec3f>::const_iterator iter = circles.begin();
+                         (iter != circles.end()) && !match;
+                         ++iter)
+                    {
+                        float dist = poi[i][j].x - (*iter)[0];
+                        dist *= dist;
+                        dist += pow(poi[i][j].y - (*iter)[1], 2);
+                        dist = sqrt(dist);
+
+                        if (dist < (*iter)[2])
+                        {
+                            match = true;
+                        }
+                    }
+                    
+                    unsigned int idx = (j*4)+i;
+		    unsigned int charidx = idx % 4;
+		    unsigned int stridx = (idx - charidx) /4;
+
+                    if (match)
+		    {
+                        circle( img, poi[i][j], 3, on, -1, 8, 0 );
+			outmsg[i] += (1 << j);
+			//cout << dec << "Dot " << i << ", " << j << " set at " << stridx << ", " << charidx << endl;
+		    }
+                    else
+                        circle( img, poi[i][j], 3, off, -1, 8, 0 );
+                }
+            }
             //moveWindow("circles", 100, 100);
             //resizeWindow("circles", 640, 480);
             imshow( "circles", img );
@@ -126,6 +179,25 @@ int main(int argc, char** argv)
             {
                 again = (waitKey(delay) == -1);
             }
+            
+	    
+            cout << "$" << hex;
+            for (unsigned int n = 0; n < 16; ++n)
+	    {
+	      cout << int(outmsg[n]);
+	    }
+            cout << endl;
+	    
+	    if (serport)
+	    {
+		  
+		serport<< "$" << hex;
+		for (unsigned int n = 0; n < 16; ++n)
+		{
+		  serport << int(outmsg[n]);
+		}
+		serport << endl;
+	    }
         } while (again);
     }
     catch (const cv::Exception &e)
