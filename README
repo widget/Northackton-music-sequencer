@@ -4,5 +4,15 @@ pysical music sequencer.  This is comprised of several parts:
 * Reading user input via a webcam
 * Generating audio output
 
-Currently the first part is being developed, using the OpenCV library.
-This code is not suitable for release!
+The audio output is generated using the Arduino Mega running the
+Step_Sequencer.pde sketch provided, with servos on pins 22-25.  This
+cannot run from USB.
+
+The user input is read from the seqc application.  It is built from
+the source provided in the following steps:
+
+1. Install OpenCV (libcv, libhighgui, libaux) and dev dependencies
+2. Run autogen.sh
+3. Run ./configure
+4. Make
+
